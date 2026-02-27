@@ -1,0 +1,48 @@
+2026-02-27 12:14:42 | INFO | Iniciando simulación raw con 20 hilos
+2026-02-27 12:14:42 | id=20 | SUCCESS | OK
+2026-02-27 12:14:42 | id=2 | SUCCESS | OK
+2026-02-27 12:14:42 | id=19 | SUCCESS | OK
+2026-02-27 12:14:42 | id=7 | SUCCESS | OK
+2026-02-27 12:14:42 | id=3 | SUCCESS | OK
+2026-02-27 12:14:42 | id=5 | SUCCESS | OK
+2026-02-27 12:14:42 | id=4 | SUCCESS | OK
+2026-02-27 12:14:42 | id=15 | SUCCESS | OK
+2026-02-27 12:14:42 | id=14 | SUCCESS | OK
+2026-02-27 12:14:42 | id=6 | SUCCESS | OK
+2026-02-27 12:14:42 | id=10 | SUCCESS | OK
+2026-02-27 12:14:42 | id=1 | SUCCESS | OK
+2026-02-27 12:14:42 | id=8 | SUCCESS | OK
+2026-02-27 12:14:42 | id=12 | SUCCESS | OK
+2026-02-27 12:14:42 | id=11 | SUCCESS | OK
+2026-02-27 12:14:42 | id=18 | SUCCESS | OK
+2026-02-27 12:14:42 | id=13 | SUCCESS | OK
+2026-02-27 12:14:42 | id=16 | SUCCESS | OK
+2026-02-27 12:14:42 | id=17 | SUCCESS | OK
+2026-02-27 12:14:42 | id=9 | SUCCESS | OK
+2026-02-27 12:14:42 | INFO | Tiempo total sin pool: 338 ms
+2026-02-27 12:14:42 | INFO | Resumen raw (20 hilos): 20 exitosas, 0 fallidas, 100.00% éxito, promedio intentos=1.00, tiempo=339 ms
+2026-02-27 12:14:42 | INFO | Iniciando simulación con pool con 20 hilos
+2026-02-27 12:14:43 | id=5 | SUCCESS | OK
+2026-02-27 12:14:43 | id=10 | SUCCESS | OK
+2026-02-27 12:14:43 | id=6 | SUCCESS | OK
+2026-02-27 12:14:43 | id=16 | SUCCESS | OK
+2026-02-27 12:14:43 | id=9 | SUCCESS | OK
+2026-02-27 12:14:43 | id=12 | SUCCESS | OK
+2026-02-27 12:14:43 | id=19 | SUCCESS | OK
+2026-02-27 12:14:43 | id=18 | SUCCESS | OK
+2026-02-27 12:14:43 | id=15 | SUCCESS | OK
+2026-02-27 12:14:43 | id=1 | SUCCESS | OK
+2026-02-27 12:14:43 | id=7 | SUCCESS | OK
+2026-02-27 12:14:43 | id=20 | SUCCESS | OK
+2026-02-27 12:14:43 | id=8 | SUCCESS | OK
+2026-02-27 12:14:43 | id=11 | SUCCESS | OK
+2026-02-27 12:14:43 | id=14 | SUCCESS | OK
+2026-02-27 12:14:43 | id=2 | SUCCESS | OK
+2026-02-27 12:14:43 | id=17 | SUCCESS | OK
+2026-02-27 12:14:43 | id=3 | SUCCESS | OK
+2026-02-27 12:14:43 | id=4 | SUCCESS | OK
+2026-02-27 12:14:43 | id=13 | SUCCESS | OK
+2026-02-27 12:14:43 | INFO | Tiempo total con pool: 862 ms
+2026-02-27 12:14:43 | INFO | Resumen pool (20 hilos): 20 exitosas, 0 fallidas, 100.00% éxito, promedio intentos=1.00, tiempo=862 ms
+2026-02-27 12:14:43 | INFO | Comparativa: raw mejor que pool (339 vs 862)
+2026-02-27 12:14:43 | INFO | Simulación completada

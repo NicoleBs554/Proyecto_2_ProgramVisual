@@ -25,4 +25,11 @@ public class PoolManager {
     public void releaseConnection(Connection connection) {
         pool.releaseConnection(connection);
     }
+
+    /**
+     * Cierra el pool y todas las conexiones que contenía.
+     */
+    public void shutdown() {
+        pool.shutdown();
+    }
 }

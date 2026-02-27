@@ -56,10 +56,6 @@ Esto generará el archivo `simulation.log` con cada muestra (fecha, id, éxito/f
 
 El código se puede extender para variar el número de muestras iterativamente del 100 al designado; simplemente llama al método de `Cliente` en un bucle.
 
-## Limpieza
-
-Se eliminaron las dependencias de JavaFX. El programa es de consola y no requiere librerías gráficas.
-
 ---
 
 _Disponible el 27/02/2026, desarrollado en Java 17._
