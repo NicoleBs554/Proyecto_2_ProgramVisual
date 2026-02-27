@@ -11,6 +11,8 @@ import java.util.concurrent.CountDownLatch;
 public class Cliente {
     private final int numeroPeticiones;
     private static final AtomicBoolean freno = new AtomicBoolean(false);
+    // mantener referencia a los hilos creados para poder interrumpirlos
+    private static final java.util.Set<Thread> activeThreads = java.util.concurrent.ConcurrentHashMap.newKeySet();
     private ConcurrentLinkedQueue<EstadisticaManager.Peticion> colaEstadisticas;
     private final AtomicInteger completadas = new AtomicInteger(0);
     private final AtomicInteger exitosas = new AtomicInteger(0);
@@ -24,7 +26,15 @@ public class Cliente {
     public void setEstadisticaQueue(ConcurrentLinkedQueue<EstadisticaManager.Peticion> queue) { this.colaEstadisticas = queue; }
     public int getCompletadas() { return completadas.get(); }
 
-    public static void activarFreno(boolean estado) { freno.set(estado); }
+    public static void activarFreno(boolean estado) {
+        freno.set(estado);
+        if (estado) {
+            // interrumpir cualquier hilo que esté dormido
+            for (Thread t : activeThreads) {
+                t.interrupt();
+            }
+        }
+    }
     public static void activarFreno() { activarFreno(true); }
     public static boolean estaFrenado() { return freno.get(); }
 
@@ -48,7 +58,23 @@ public class Cliente {
         return t;
     }
 
+    // helper para crear hilos con menor stack y así poder escalar a 10000+ hilos
+    private Thread createWorker(Runnable r, String name) {
+        // envolver para eliminar de activeThreads al terminar
+        Runnable wrapped = () -> {
+            try {
+                r.run();
+            } finally {
+                activeThreads.remove(Thread.currentThread());
+            }
+        };
+        Thread t = new Thread(null, wrapped, name, 128 * 1024);
+        activeThreads.add(t);
+        return t;
+    }
+
     public void ejecutarSinPoolConEstadisticas() {
+        activeThreads.clear();
         activarFreno(false);
         var frenoThread = escucharFreno();
         completadas.set(0);
@@ -62,7 +88,7 @@ public class Cliente {
 
         for (var i = 0; i < numeroPeticiones; i++) {
             final var idx = i + 1;
-            Thread t = new Thread(() -> {
+            Thread t = createWorker(() -> {
                 try {
                     startLatch.await();
                 } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
@@ -94,7 +120,7 @@ public class Cliente {
                     }
                 }
                 completadas.incrementAndGet();
-            });
+            }, "Worker-" + idx);
             tareas.add(t);
             t.start();
         }
@@ -111,6 +137,7 @@ public class Cliente {
     }
 
     public void ejecutarConPoolConEstadisticas() {
+        activeThreads.clear();
         activarFreno(false);
         var frenoThread = escucharFreno();
         completadas.set(0);
@@ -124,7 +151,7 @@ public class Cliente {
 
         for (var i = 0; i < numeroPeticiones; i++) {
             final var idx = i + 1;
-            Thread t = new Thread(() -> {
+            Thread t = createWorker(() -> {
                 try {
                     startLatch.await();
                 } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
@@ -163,7 +190,7 @@ public class Cliente {
                     }
                 }
                 completadas.incrementAndGet();
-            });
+            }, "Worker-Pool-" + idx);
             tareas.add(t);
             t.start();
         }

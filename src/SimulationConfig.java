@@ -24,6 +24,10 @@ public class SimulationConfig {
         return props.getProperty("query", "SELECT 1");
     }
 
+    public static void setQuery(String q) {
+        if (q != null) props.setProperty("query", q);
+    }
+
     public static int[] getSamplesList() {
         String raw = props.getProperty("samples", "10");
         if (raw.contains(",")) {
@@ -36,8 +40,40 @@ public class SimulationConfig {
         return new int[]{Integer.parseInt(raw)};
     }
 
+    public static void setSamples(String s) {
+        if (s != null) props.setProperty("samples", s);
+    }
+
     public static int getRetries() {
         return Integer.parseInt(props.getProperty("retries", "2"));
+    }
+
+    public static void setRetries(int r) {
+        props.setProperty("retries", String.valueOf(r));
+    }
+
+    /**
+     * Indica el modo de ejecución de la simulación: RAW abre conexión en cada
+     * hilo de forma independiente, POOL usa el pool de conexiones, BOTH ejecuta
+     * ambas variantes y compara resultados. Puede invocarse desde la línea de
+     * comandos o la interfaz gráfica; si no se especifica, se lee de
+     * sim.properties (valor por defecto "both").
+     */
+    public enum Mode { RAW, POOL, BOTH }
+
+    public static Mode getMode() {
+        String m = props.getProperty("mode", "both").trim().toUpperCase();
+        try {
+            return Mode.valueOf(m);
+        } catch (IllegalArgumentException e) {
+            // valor inválido, usar BOTH y avisar para debug
+            System.err.println("Modo de simulación desconocido en sim.properties: " + m + ". Usando BOTH.");
+            return Mode.BOTH;
+        }
+    }
+
+    public static void setMode(Mode m) {
+        if (m != null) props.setProperty("mode", m.name());
     }
 
     /**

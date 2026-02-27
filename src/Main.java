@@ -1,6 +1,7 @@
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class Main {
+
     private static void validateConfig() {
         String[] keys = {"DB_HOST", "DB_PORT", "DB_NAME", "DB_USER", "DB_PASSWORD"};
         for (String k : keys) {
@@ -14,14 +15,30 @@ public class Main {
     }
 
     public static void main(String[] args) throws InterruptedException {
-        runSimulation();
+        SimulationConfig.Mode m = SimulationConfig.Mode.BOTH;
+        if (args.length > 0) {
+            try {
+                m = SimulationConfig.Mode.valueOf(args[0].toUpperCase());
+            } catch (IllegalArgumentException e) {
+                System.err.println("Argumento desconocido: " + args[0] + ". Usando modo por defecto");
+            }
+        }
+        runSimulation(m);
     }
 
     /**
-     * Ejecuta la simulación completa usando la configuración actual.
-     * Reutilizable desde otras clases (por ejemplo una interfaz gráfica).
+     * Invocación sin parámetros (por compatibilidad). Consulta el modo en la
+     * configuración de sim.properties.
      */
     public static void runSimulation() throws InterruptedException {
+        runSimulation(SimulationConfig.getMode());
+    }
+
+    /**
+     * Ejecuta la simulación completa usando la configuración actual y el modo
+     * indicado (RAW, POOL o BOTH).
+     */
+    public static void runSimulation(SimulationConfig.Mode mode) throws InterruptedException {
         // limpiar log al inicio
         LoggerUtil.init();
 
@@ -59,73 +76,92 @@ public class Main {
         long totalRawTime = 0;
         long totalPoolTime = 0;
         for (int samples : sampleSizes) {
-            System.out.println("Simulación iniciada con " + samples + " muestras.");
+            System.out.println("Simulación iniciada con " + samples + " muestras (modo="+mode+").");
             // Cola y manager para estadisticas
             var cola = new ConcurrentLinkedQueue<EstadisticaManager.Peticion>();
             var manager = new EstadisticaManager(cola);
             var hiloMgr = new Thread(manager);
             hiloMgr.start();
 
-            // Raw
-            LoggerUtil.logInfo("Iniciando simulación raw con " + samples + " hilos");
-            Cliente cliente = new Cliente(samples);
-            cliente.setEstadisticaQueue(cola);
-            long startRaw = System.currentTimeMillis();
-            cliente.ejecutarSinPoolConEstadisticas();
-            long rawTime = System.currentTimeMillis() - startRaw;
-            totalRawTime += rawTime;
+            if (mode == SimulationConfig.Mode.RAW || mode == SimulationConfig.Mode.BOTH) {
+                // Raw
+                LoggerUtil.logInfo("Iniciando simulación raw con " + samples + " hilos");
+                Cliente cliente = new Cliente(samples);
+                cliente.setEstadisticaQueue(cola);
+                long startRaw = System.currentTimeMillis();
+                cliente.ejecutarSinPoolConEstadisticas();
+                long rawTime = System.currentTimeMillis() - startRaw;
+                totalRawTime += rawTime;
 
-            manager.stop();
-            hiloMgr.join();
-            double porcRaw = manager.getPorcentajeExito();
-            double promRaw = manager.getPromedioIntentos();
-            System.out.println("Raw resultados: " + manager.getExitosas() + " exitosas, " + manager.getFallidas() + " fallidas, "
-                    + String.format("%.2f", porcRaw) + "% éxito, promedio intentos=" + String.format("%.2f", promRaw) + ", tiempo=" + rawTime + " ms");
-            LoggerUtil.logInfo("Resumen raw (" + samples + " hilos): " + manager.getExitosas() + " exitosas, " + manager.getFallidas() + " fallidas, "
-                    + String.format("%.2f", porcRaw) + "% éxito, promedio intentos=" + String.format("%.2f", promRaw) + ", tiempo=" + rawTime + " ms");
+                manager.stop();
+                hiloMgr.join();
+                double porcRaw = manager.getPorcentajeExito();
+                double promRaw = manager.getPromedioIntentos();
+                System.out.println("Raw resultados: " + manager.getExitosas() + " exitosas, " + manager.getFallidas() + " fallidas, "
+                        + String.format("%.2f", porcRaw) + "% éxito, promedio intentos=" + String.format("%.2f", promRaw) + ", tiempo=" + rawTime + " ms");
+                LoggerUtil.logInfo("Resumen raw (" + samples + " hilos): " + manager.getExitosas() + " exitosas, " + manager.getFallidas() + " fallidas, "
+                        + String.format("%.2f", porcRaw) + "% éxito, promedio intentos=" + String.format("%.2f", promRaw) + ", tiempo=" + rawTime + " ms");
 
-            // Preparar nueva simulación con pool
-            cola.clear();
-            manager = new EstadisticaManager(cola);
-            hiloMgr = new Thread(manager);
-            hiloMgr.start();
+                // preparar nueva simulación con pool si también se va a ejecutar
+                if (mode == SimulationConfig.Mode.BOTH) {
+                    cola.clear();
+                    manager = new EstadisticaManager(cola);
+                    hiloMgr = new Thread(manager);
+                    hiloMgr.start();
+                }
+            }
 
-            LoggerUtil.logInfo("Iniciando simulación con pool con " + samples + " hilos");
-            Cliente clientePool = new Cliente(samples);
-            clientePool.setEstadisticaQueue(cola);
-            long startPool = System.currentTimeMillis();
-            clientePool.ejecutarConPoolConEstadisticas();
-            long poolTime = System.currentTimeMillis() - startPool;
-            totalPoolTime += poolTime;
+            if (mode == SimulationConfig.Mode.POOL || mode == SimulationConfig.Mode.BOTH) {
+                // cuando venimos de RAW en modo BOTH, cola y manager han sido reiniciados
+                if (mode == SimulationConfig.Mode.POOL) {
+                    // no se ejecutó RAW antes
+                    cola.clear();
+                    manager = new EstadisticaManager(cola);
+                    hiloMgr = new Thread(manager);
+                    hiloMgr.start();
+                }
+                LoggerUtil.logInfo("Iniciando simulación con pool con " + samples + " hilos");
+                Cliente clientePool = new Cliente(samples);
+                clientePool.setEstadisticaQueue(cola);
+                long startPool = System.currentTimeMillis();
+                clientePool.ejecutarConPoolConEstadisticas();
+                long poolTime = System.currentTimeMillis() - startPool;
+                totalPoolTime += poolTime;
 
-            manager.stop();
-            hiloMgr.join();
-            double porcPool = manager.getPorcentajeExito();
-            double promPool = manager.getPromedioIntentos();
-            System.out.println("Pool resultados: " + manager.getExitosas() + " exitosas, " + manager.getFallidas() + " fallidas, "
-                    + String.format("%.2f", porcPool) + "% éxito, promedio intentos=" + String.format("%.2f", promPool) + ", tiempo=" + poolTime + " ms");
-            LoggerUtil.logInfo("Resumen pool (" + samples + " hilos): " + manager.getExitosas() + " exitosas, " + manager.getFallidas() + " fallidas, "
-                    + String.format("%.2f", porcPool) + "% éxito, promedio intentos=" + String.format("%.2f", promPool) + ", tiempo=" + poolTime + " ms");
+                manager.stop();
+                hiloMgr.join();
+                double porcPool = manager.getPorcentajeExito();
+                double promPool = manager.getPromedioIntentos();
+                System.out.println("Pool resultados: " + manager.getExitosas() + " exitosas, " + manager.getFallidas() + " fallidas, "
+                        + String.format("%.2f", porcPool) + "% éxito, promedio intentos=" + String.format("%.2f", promPool) + ", tiempo=" + poolTime + " ms");
+                LoggerUtil.logInfo("Resumen pool (" + samples + " hilos): " + manager.getExitosas() + " exitosas, " + manager.getFallidas() + " fallidas, "
+                        + String.format("%.2f", porcPool) + "% éxito, promedio intentos=" + String.format("%.2f", promPool) + ", tiempo=" + poolTime + " ms");
+            }
         }
 
         // comparación general
-        System.out.println("Tiempo total raw: " + totalRawTime + " ms, pool: " + totalPoolTime + " ms");
-        if (totalRawTime < totalPoolTime) {
-            System.out.println("En general raw fue más rápido.");
-            LoggerUtil.logInfo("Comparativa: raw mejor que pool (" + totalRawTime + " vs " + totalPoolTime + ")");
-        } else if (totalPoolTime < totalRawTime) {
-            System.out.println("En general pool fue más rápido.");
-            LoggerUtil.logInfo("Comparativa: pool mejor que raw (" + totalPoolTime + " vs " + totalRawTime + ")");
-        } else {
-            System.out.println("Tiempos totales iguales para raw y pool.");
-            LoggerUtil.logInfo("Comparativa: raw igual a pool (" + totalRawTime + ")");
+        if (mode == SimulationConfig.Mode.BOTH) {
+            System.out.println("Tiempo total raw: " + totalRawTime + " ms, pool: " + totalPoolTime + " ms");
+            if (totalRawTime < totalPoolTime) {
+                System.out.println("En general raw fue más rápido.");
+                LoggerUtil.logInfo("Comparativa: raw mejor que pool (" + totalRawTime + " vs " + totalPoolTime + ")");
+            } else if (totalPoolTime < totalRawTime) {
+                System.out.println("En general pool fue más rápido.");
+                LoggerUtil.logInfo("Comparativa: pool mejor que raw (" + totalPoolTime + " vs " + totalRawTime + ")");
+            } else {
+                System.out.println("Tiempos totales iguales para raw y pool.");
+                LoggerUtil.logInfo("Comparativa: raw igual a pool (" + totalRawTime + ")");
+            }
         }
 
         // liberar recursos del pool antes de terminar
         PoolManager.getInstance().shutdown();
 
         LoggerUtil.logInfo("Simulación completada");
+        // también escribir a log de la interfaz
+        LoggerUtil.logInfo("***** FIN DE SIMULACIÓN *****");
     }
+
 
     /**
      * Analiza la consulta de configuración y, si contiene un FROM <tabla>,

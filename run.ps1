@@ -15,5 +15,12 @@ if ($LASTEXITCODE -ne 0) {
 Write-Host "Limpiando log anterior..."
 if (Test-Path "simulation.log") { Remove-Item -Force "simulation.log" }
 
+# aceptar parámetro de modo: RAW, POOL o BOTH
+$mode = $args[0]
 Write-Host "Ejecutando con classpath: .;$PSQL_JAR"
-java -cp ".;$PSQL_JAR" Main
+Write-Host "Modo: $mode"
+java -cp ".;$PSQL_JAR" Main $mode
+
+# para abrir la interfaz gráfica en su lugar:
+# java -cp ".;$PSQL_JAR" SimulatorUI
+

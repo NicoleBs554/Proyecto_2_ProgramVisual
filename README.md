@@ -27,9 +27,18 @@ Las métricas se guardan en `simulation.log` y también se muestran en consola.
   retries=3
   ```
 
-Ajusta `samples` y `retries` según tus necesidades.
+Ajusta `samples` (puede incluir valores muy altos, por ejemplo 10000) y `retries` según tus necesidades.
 
 ## Compilar y ejecutar en Windows
+
+Además de la interfaz de línea de comandos tradicional, existe una
+pequeña GUI (`SimulatorUI`) que permite activar fácilmente la simulación,
+ver los logs en tiempo real y detenerla con el botón **Detener** (freno de
+emergencia). La ventana ahora ofrece campos editables para **Query**,
+**Samples**, **Retries** y un selector de **Modo**. Los valores iniciales
+se cargan desde `sim.properties`, pero puedes cambiarlos antes de iniciar;
+los controles se bloquean mientras la simulación se está ejecutando para
+prevenir ejecuciones concurrentes.
 
 1. Coloca el driver JDBC de PostgreSQL (por ejemplo `postgresql-42.5.0.jar`) en `lib\\` y renómbralo `postgresql.jar` o actualiza las rutas en los `*.bat`.
 2. En PowerShell o cmd:
@@ -47,6 +56,14 @@ Esto generará el archivo `simulation.log` con cada muestra (fecha, id, éxito/f
 - Promedio de reintentos por muestra.
 
 ## Funcionalidades adicionales
+
+- Selección de modo RAW/POOL/BOTH tanto por CLI (`java Main RAW`) como desde
+  la interfaz gráfica o la propiedad `mode` en `sim.properties`.
+- El código ha sido reforzado para soportar simulaciones con miles de hilos
+  concurrentes (hasta 10000 y más) reduciendo el tamaño de pila de cada hilo
+  y evitando fallos de memoria.
+
+## Métricas calculadas
 
 - Hilos concurrentes que inician al mismo tiempo (uso de `CountDownLatch`).
 - Freno manual: presiona **Enter** en la consola para detener la simulación rápidamente.

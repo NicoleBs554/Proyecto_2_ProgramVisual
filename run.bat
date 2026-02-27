@@ -23,5 +23,17 @@ if exist simulation.log (
     del /f /q simulation.log
 )
 
+REM si se pasa un parámetro, se usa como modo (RAW/POOL/BOTH)
+if "%1"=="" (
+    set MODE=
+) else (
+    set MODE=%1
+)
+
 echo Ejecutando con classpath: ".;%PSQL_JAR%"
-java -cp ".;%PSQL_JAR%" Main
+echo Modo: %MODE%
+java -cp ".;%PSQL_JAR%" Main %MODE%
+
+REM alternativamente, ejecuta la interfaz gráfica:
+REM java -cp ".;%PSQL_JAR%" SimulatorUI
+
