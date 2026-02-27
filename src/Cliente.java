@@ -81,13 +81,13 @@ public class Cliente {
                             while (rs.next() && !estaFrenado()) {
                                 exito = true;
                             }
-                            if (colaEstadisticas != null) colaEstadisticas.add(new EstadisticaManager.Peticion(idx, exito, exito ? "OK" : "Sin resultados (attempt="+attempts+")"));
+                            if (colaEstadisticas != null) colaEstadisticas.add(new EstadisticaManager.Peticion(idx, exito, exito ? "OK" : "Sin resultados (attempt="+attempts+")", attempts));
                             if (exito) exitosas.incrementAndGet(); else if (attempts>maxRetries) fallidas.incrementAndGet();
                         }
                         Thread.sleep(new Random().nextInt(200));
                     } catch (Exception e) {
                         if (attempts>maxRetries) {
-                            if (colaEstadisticas != null) colaEstadisticas.add(new EstadisticaManager.Peticion(idx, false, e.getMessage()));
+                            if (colaEstadisticas != null) colaEstadisticas.add(new EstadisticaManager.Peticion(idx, false, e.getMessage(), attempts));
                             fallidas.incrementAndGet();
                         }
                         try { Thread.sleep(50); } catch (InterruptedException ignored) { Thread.currentThread().interrupt(); }
@@ -137,7 +137,7 @@ public class Cliente {
                         var connection = poolManager.getConnection();
                         if (connection == null) {
                             if (attempts>maxRetries) {
-                                if (colaEstadisticas != null) colaEstadisticas.add(new EstadisticaManager.Peticion(idx, false, "No se obtuvo conexión (attempt="+attempts+")"));
+                                if (colaEstadisticas != null) colaEstadisticas.add(new EstadisticaManager.Peticion(idx, false, "No se obtuvo conexión (attempt="+attempts+")", attempts));
                                 fallidas.incrementAndGet();
                             }
                             try { Thread.sleep(50); } catch (InterruptedException ignored) { Thread.currentThread().interrupt(); }
@@ -148,7 +148,7 @@ public class Cliente {
                             while (rs.next() && !estaFrenado()) {
                                 exito = true;
                             }
-                            if (colaEstadisticas != null) colaEstadisticas.add(new EstadisticaManager.Peticion(idx, exito, exito?"OK":"Sin resultados (attempt="+attempts+")"));
+                            if (colaEstadisticas != null) colaEstadisticas.add(new EstadisticaManager.Peticion(idx, exito, exito?"OK":"Sin resultados (attempt="+attempts+")", attempts));
                             if (exito) exitosas.incrementAndGet(); else if (attempts>maxRetries) fallidas.incrementAndGet();
                         } finally {
                             poolManager.releaseConnection(connection);
@@ -156,7 +156,7 @@ public class Cliente {
                         Thread.sleep(new Random().nextInt(200));
                     } catch (Exception e) {
                         if (attempts>maxRetries) {
-                            if (colaEstadisticas != null) colaEstadisticas.add(new EstadisticaManager.Peticion(idx, false, e.getMessage()));
+                            if (colaEstadisticas != null) colaEstadisticas.add(new EstadisticaManager.Peticion(idx, false, e.getMessage(), attempts));
                             fallidas.incrementAndGet();
                         }
                         try { Thread.sleep(50); } catch (InterruptedException ignored) { Thread.currentThread().interrupt(); }

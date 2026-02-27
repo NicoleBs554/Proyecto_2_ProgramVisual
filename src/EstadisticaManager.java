@@ -7,11 +7,17 @@ public class EstadisticaManager implements Runnable {
         public final int id;
         public final boolean exito;
         public final String mensaje;
+        public final int attempts;
 
         public Peticion(int id, boolean exito, String mensaje) {
+            this(id, exito, mensaje, 0);
+        }
+
+        public Peticion(int id, boolean exito, String mensaje, int attempts) {
             this.id = id;
             this.exito = exito;
             this.mensaje = mensaje;
+            this.attempts = attempts;
         }
     }
 
@@ -19,6 +25,7 @@ public class EstadisticaManager implements Runnable {
     private final AtomicBoolean running = new AtomicBoolean(true);
     private final AtomicInteger exitosas = new AtomicInteger(0);
     private final AtomicInteger fallidas = new AtomicInteger(0);
+    private final AtomicInteger totalAttempts = new AtomicInteger(0);
 
     public EstadisticaManager(ConcurrentLinkedQueue<Peticion> cola) {
         this.cola = cola;
@@ -29,6 +36,7 @@ public class EstadisticaManager implements Runnable {
         while (running.get() || !cola.isEmpty()) {
             var p = cola.poll();
             if (p != null) {
+                totalAttempts.addAndGet(p.attempts);
                 if (p.exito) exitosas.incrementAndGet();
                 else fallidas.incrementAndGet();
                 LoggerUtil.logSample(p.id, p.exito, p.mensaje);
@@ -49,5 +57,9 @@ public class EstadisticaManager implements Runnable {
     public double getPorcentajeFallo() {
         int tot = exitosas.get() + fallidas.get();
         return tot == 0 ? 0.0 : (fallidas.get() * 100.0 / tot);
+    }
+    public double getPromedioIntentos() {
+        int tot = exitosas.get() + fallidas.get();
+        return tot == 0 ? 0.0 : totalAttempts.get() / (double) tot;
     }
 }
