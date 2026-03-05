@@ -20,10 +20,21 @@ public class DefaultConnectionPool implements ConnectionPool {
             initial = minSize;
         }
         int cfgMax = Config.getInt("POOL_MAX_SIZE");
+        // si la configuración no especifica un máximo o es menor al número de
+        // muestras que se ejecutarán, ajustamos para que no se bloquee.
+        int maxSamples = 0;
+        try {
+            int[] arr = SimulationConfig.getSamplesList();
+            maxSamples = java.util.Arrays.stream(arr).max().orElse(0);
+        } catch (Exception ignored) {}
         if (cfgMax <= 0) {
-            maxSize = initial;
+            maxSize = Math.max(initial, maxSamples);
         } else {
-            maxSize = Math.max(initial, cfgMax);
+            maxSize = Math.max(initial, Math.max(cfgMax, maxSamples));
+        }
+        if (maxSize < maxSamples) {
+            System.err.println("[Pool] advertencia: POOL_MAX_SIZE ajustado a " + maxSize +
+                    " para cubrir muestras=" + maxSamples);
         }
         downThreshold = Config.getInt("POOL_DOWN_THRESHOLD") / 100.0; // porcentaje de libres para reducir
         pool = new LinkedBlockingQueue<>();

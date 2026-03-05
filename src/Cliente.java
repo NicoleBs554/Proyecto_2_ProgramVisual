@@ -103,7 +103,8 @@ public class Cliente {
 
         // usar factory que produce hilos ligeros para poder escalar a 10k
         ThreadFactory factory = r -> createWorker(r, "Raw-" + threadCounter.incrementAndGet());
-        ExecutorService executor = Executors.newCachedThreadPool(factory);
+        // fixed pool garantiza creación de todos los hilos de una vez
+        ExecutorService executor = Executors.newFixedThreadPool(numeroPeticiones, factory);
         synchronized (activeExecutors) { activeExecutors.add(executor); }
         for (var i = 0; i < numeroPeticiones; i++) {
             final var idx = i + 1;
@@ -172,7 +173,9 @@ public class Cliente {
 
         // factory para hilos del pool
         ThreadFactory factory = r -> createWorker(r, "Pool-" + threadCounter.incrementAndGet());
-        ExecutorService executor = Executors.newCachedThreadPool(factory);
+        // usar fixed pool igual al número de peticiones para forzar el arranque de
+        // todas las tareas; así podemos ver los 10000 hilos incluso con pool
+        ExecutorService executor = Executors.newFixedThreadPool(numeroPeticiones, factory);
         synchronized (activeExecutors) { activeExecutors.add(executor); }
         for (var i = 0; i < numeroPeticiones; i++) {
             final var idx = i + 1;
