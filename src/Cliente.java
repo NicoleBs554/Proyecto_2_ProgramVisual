@@ -7,12 +7,18 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.List;
+import java.util.ArrayList;
 
 public class Cliente {
     private final int numeroPeticiones;
     private static final AtomicBoolean freno = new AtomicBoolean(false);
     // mantener referencia a los hilos creados para poder interrumpirlos
     private static final java.util.Set<Thread> activeThreads = java.util.concurrent.ConcurrentHashMap.newKeySet();
+    private static final List<ExecutorService> activeExecutors = new ArrayList<>();
     private ConcurrentLinkedQueue<EstadisticaManager.Peticion> colaEstadisticas;
     private final AtomicInteger completadas = new AtomicInteger(0);
     private final AtomicInteger exitosas = new AtomicInteger(0);
@@ -32,6 +38,13 @@ public class Cliente {
             // interrumpir cualquier hilo que esté dormido
             for (Thread t : activeThreads) {
                 t.interrupt();
+            }
+            // detener inmediatamente los executors
+            synchronized (activeExecutors) {
+                for (ExecutorService e : activeExecutors) {
+                    e.shutdownNow();
+                }
+                activeExecutors.clear();
             }
         }
     }
@@ -81,20 +94,21 @@ public class Cliente {
         exitosas.set(0);
         fallidas.set(0);
         var inicio = System.currentTimeMillis();
-        var tareas = new java.util.ArrayList<Thread>();
         var startLatch = new CountDownLatch(1);
         int maxRetries = SimulationConfig.getRetries();
         String query = SimulationConfig.getQuery();
 
+        ExecutorService executor = Executors.newCachedThreadPool();
+        synchronized (activeExecutors) { activeExecutors.add(executor); }
         for (var i = 0; i < numeroPeticiones; i++) {
             final var idx = i + 1;
-            Thread t = createWorker(() -> {
+            executor.submit(() -> {
                 try {
                     startLatch.await();
-                } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+                } catch (InterruptedException e) { Thread.currentThread().interrupt(); return; }
                 boolean exito = false;
                 int attempts = 0;
-                while (attempts <= maxRetries && !exito && !estaFrenado()) {
+                while (attempts <= maxRetries && !exito && !estaFrenado() && !Thread.currentThread().isInterrupted()) {
                     attempts++;
                     try (Connection connection = DriverManager.getConnection(
                             "jdbc:postgresql://" + Config.get("DB_HOST") + ":" + Config.get("DB_PORT") + "/" + Config.get("DB_NAME"),
@@ -120,16 +134,19 @@ public class Cliente {
                     }
                 }
                 completadas.incrementAndGet();
-            }, "Worker-" + idx);
-            tareas.add(t);
-            t.start();
+            });
         }
         // lanzar todas a la vez
         startLatch.countDown();
 
-        for (var t : tareas) {
-            try { t.join(); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+        executor.shutdown();
+        try {
+            executor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+        } catch (InterruptedException e) {
+            executor.shutdownNow();
+            Thread.currentThread().interrupt();
         }
+        synchronized (activeExecutors) { activeExecutors.remove(executor); }
         activarFreno(true);
         try { if (frenoThread != null) frenoThread.join(100); } catch (InterruptedException ignored) {}
         var fin = System.currentTimeMillis();
@@ -144,20 +161,21 @@ public class Cliente {
         exitosas.set(0);
         fallidas.set(0);
         var inicio = System.currentTimeMillis();
-        var tareas = new java.util.ArrayList<Thread>();
         var startLatch = new CountDownLatch(1);
         int maxRetries = SimulationConfig.getRetries();
         String query = SimulationConfig.getQuery();
 
+        ExecutorService executor = Executors.newCachedThreadPool();
+        synchronized (activeExecutors) { activeExecutors.add(executor); }
         for (var i = 0; i < numeroPeticiones; i++) {
             final var idx = i + 1;
-            Thread t = createWorker(() -> {
+            executor.submit(() -> {
                 try {
                     startLatch.await();
-                } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+                } catch (InterruptedException e) { Thread.currentThread().interrupt(); return; }
                 boolean exito = false;
                 int attempts = 0;
-                while (attempts <= maxRetries && !exito && !estaFrenado()) {
+                while (attempts <= maxRetries && !exito && !estaFrenado() && !Thread.currentThread().isInterrupted()) {
                     attempts++;
                     try {
                         if (poolManager == null) poolManager = PoolManager.getInstance();
@@ -190,16 +208,19 @@ public class Cliente {
                     }
                 }
                 completadas.incrementAndGet();
-            }, "Worker-Pool-" + idx);
-            tareas.add(t);
-            t.start();
+            });
         }
         // lanzar todas
         startLatch.countDown();
 
-        for (var t : tareas) {
-            try { t.join(); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+        executor.shutdown();
+        try {
+            executor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+        } catch (InterruptedException e) {
+            executor.shutdownNow();
+            Thread.currentThread().interrupt();
         }
+        synchronized (activeExecutors) { activeExecutors.remove(executor); }
         activarFreno(true);
         try { if (frenoThread != null) frenoThread.join(100); } catch (InterruptedException ignored) {}
         var fin = System.currentTimeMillis();

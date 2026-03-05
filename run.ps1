@@ -1,7 +1,7 @@
 # PowerShell script to compile and run the simulation
-$PSQL_JAR = "lib\postgresql.jar"
+$PSQL_JAR = "postgresql.jar"
 if (-not (Test-Path $PSQL_JAR)) {
-    Write-Error "ERROR: no se encontró $PSQL_JAR. Copia el driver JDBC de PostgreSQL en la carpeta lib y renoḿbralo o ajusta esta variable."
+    Write-Error "ERROR: no se encontró $PSQL_JAR. Copia el driver JDBC de PostgreSQL en la carpeta raíz y renómbralo o ajusta esta variable."
     exit 1
 }
 

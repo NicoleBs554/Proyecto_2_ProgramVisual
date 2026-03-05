@@ -8,7 +8,7 @@ public class Main {
             String v = Config.get(k);
             System.out.println("Config " + k + "=" + v);
             if (v == null || v.isBlank()) {
-                System.err.println("Falta variable de entorno obligatoria: " + k);
+                System.err.println("Falta variable de configuración obligatoria: " + k + " en sim.properties o variables de entorno");
                 throw new IllegalStateException("Variable faltante: " + k);
             }
         }
@@ -76,6 +76,7 @@ public class Main {
         long totalRawTime = 0;
         long totalPoolTime = 0;
         for (int samples : sampleSizes) {
+            if (Thread.interrupted()) return;
             System.out.println("Simulación iniciada con " + samples + " muestras (modo="+mode+").");
             // Cola y manager para estadisticas
             var cola = new ConcurrentLinkedQueue<EstadisticaManager.Peticion>();

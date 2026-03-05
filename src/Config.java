@@ -1,29 +1,16 @@
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Properties;
 
 public class Config {
     private static final Properties properties = new Properties();
 
     static {
-        try {
-            // mostrar directorio de trabajo para que sepamos dónde busca
-            System.out.println("Config cargando desde directorio: " + Path.of(".").toAbsolutePath());
-            Path p = Path.of(".env");
-            if (!Files.exists(p)) p = Path.of(".ENV");
-            if (Files.exists(p)) {
-                System.out.println("Leyendo configuracion de " + p.toAbsolutePath());
-                try (var fis = new FileInputStream(p.toFile())) {
-                    properties.load(fis);
-                }
-            } else {
-                System.out.println("No se encontro archivo .env/.ENV");
-            }
-            System.out.println("Propiedades cargadas: " + properties);
-        } catch (IOException e) {
-            throw new RuntimeException("Error al cargar el archivo de entorno", e);
+        // Cargar de sim.properties
+        try (var fis = new FileInputStream("sim.properties")) {
+            properties.load(fis);
+        } catch (IOException ignored) {
+            // archivo opcional
         }
     }
 

@@ -9,22 +9,20 @@ Las métricas se guardan en `simulation.log` y también se muestran en consola.
 
 ## Configuración
 
-- El archivo `.ENV` en la raíz define los parámetros de conexión:
+- El archivo `sim.properties` define los parámetros de conexión y simulación:
   ```properties
   DB_HOST=localhost
-  DB_PORT=5433
-  DB_NAME=javaprueba
+  DB_PORT=5432
+  DB_NAME=Proyecto2_visual
   DB_USER=postgres
-  DB_PASSWORD=nicole10
-  POOL_SIZE=50
-  POOL_TIMEOUT=3000
-  ```
-
-- El archivo `sim.properties` controla la simulación:
-  ```properties
+  DB_PASSWORD=Peroqueconio12
   query=SELECT * FROM usuario LIMIT 1
-  samples=20
+  samples=10000
   retries=3
+  POOL_SIZE=10
+  POOL_MIN_SIZE=10
+  POOL_MAX_SIZE=10000
+  POOL_DOWN_THRESHOLD=70
   ```
 
 Ajusta `samples` (puede incluir valores muy altos, por ejemplo 10000) y `retries` según tus necesidades.
@@ -40,11 +38,10 @@ se cargan desde `sim.properties`, pero puedes cambiarlos antes de iniciar;
 los controles se bloquean mientras la simulación se está ejecutando para
 prevenir ejecuciones concurrentes.
 
-1. Coloca el driver JDBC de PostgreSQL (por ejemplo `postgresql-42.5.0.jar`) en `lib\\` y renómbralo `postgresql.jar` o actualiza las rutas en los `*.bat`.
-2. En PowerShell o cmd:
+1. Coloca el driver JDBC de PostgreSQL (por ejemplo `postgresql-42.5.0.jar`) en la raíz del proyecto y renómbralo `postgresql.jar`.
+2. En PowerShell:
    ```powershell
-   .\\build.bat
-   .\\run.bat
+   .\\run.ps1
    ```
 
 Esto generará el archivo `simulation.log` con cada muestra (fecha, id, éxito/fallo, mensaje) y mostrará un resumen de métricas al terminar.
@@ -66,8 +63,8 @@ Esto generará el archivo `simulation.log` con cada muestra (fecha, id, éxito/f
 ## Métricas calculadas
 
 - Hilos concurrentes que inician al mismo tiempo (uso de `CountDownLatch`).
-- Freno manual: presiona **Enter** en la consola para detener la simulación rápidamente.
-- Configuración externa (`.ENV` y `sim.properties`).
+- Freno manual: presiona **Enter** en la consola para detener la simulación rápidamente, o usa el botón Detener en la GUI.
+- Configuración externa (`sim.properties`).
 
 ## Ejemplo de iteraciones (opcional)
 
@@ -75,4 +72,4 @@ El código se puede extender para variar el número de muestras iterativamente d
 
 ---
 
-_Disponible el 27/02/2026, desarrollado en Java 17._
+_Disponible el 5/03/2026, desarrollado en Java 17._
